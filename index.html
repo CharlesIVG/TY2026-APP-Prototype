@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tokyo Yamathon Trek — prototype</title>
+<style>
+  :root{
+    --s2:#ffffff; --s1:#f5f4ef; --s0:#eae7df;
+    --tp:#1f1f1d; --ts:#5f5e5a; --tm:#8f8e86;
+    --bd:rgba(0,0,0,.09); --bds:rgba(0,0,0,.15);
+    --acc:#185FA5; --acc-fill:#1f6fc0; --bg-acc:#E6F1FB; --t-acc:#185FA5;
+    --suc:#3B6D11; --bg-suc:#EAF3DE; --t-suc:#3B6D11; --green:#4e8a1a;
+    --warn:#854F0B; --bg-warn:#FAEEDA; --t-warn:#854F0B;
+    --radius:9px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --s2:#302f2b; --s1:#262521; --s0:#161613;
+      --tp:#ece9e0; --ts:#b4b2a9; --tm:#8f8e86;
+      --bd:rgba(255,255,255,.10); --bds:rgba(255,255,255,.17);
+      --acc:#85B7EB; --acc-fill:#378ADD; --bg-acc:#0C447C; --t-acc:#B5D4F4;
+      --suc:#97C459; --bg-suc:#27500A; --t-suc:#C0DD97; --green:#6fae2a;
+      --warn:#FAC775; --bg-warn:#5a340a; --t-warn:#FAC775;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--s0);color:var(--tp);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px 12px 40px}
+  .hint{font-size:12px;color:var(--tm);margin:0 0 16px;text-align:center;max-width:340px;line-height:1.5}
+  .frame{width:340px;max-width:100%;background:var(--s2);border:0.5px solid var(--bds);
+    border-radius:30px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.12);position:relative;min-height:680px}
+  .screen{display:none;padding:20px 16px 12px}
+  .screen.on{display:block}
+  .center{text-align:center}
+  .rowb{display:flex;justify-content:space-between;align-items:center}
+  input{width:100%;height:44px;border:0.5px solid var(--bds);background:var(--s2);color:var(--tp);
+    border-radius:var(--radius);font-size:16px;padding:0 12px;outline:none}
+  input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--bg-acc)}
+  .btn{width:100%;height:48px;border-radius:var(--radius);font-size:15px;font-weight:500;
+    border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-p{background:var(--acc-fill);color:#fff}
+  .btn-o{background:transparent;border:0.5px solid var(--bds);color:var(--tp)}
+  .btn-sm{height:44px;font-size:14px}
+  .card{background:var(--s1);border-radius:12px;padding:14px}
+  .chip{display:inline-block;font-size:12px;font-weight:500;background:var(--bg-suc);color:var(--t-suc);
+    padding:3px 10px;border-radius:var(--radius)}
+  .muted{color:var(--tm)} .sec{color:var(--ts)}
+  .lbl{font-size:12px;font-weight:500;color:var(--ts);display:flex;align-items:center;gap:6px}
+  .seg{display:flex;gap:4px;background:var(--s1);border-radius:10px;padding:3px;margin-bottom:8px}
+  .seg div{flex:1;text-align:center;font-size:13px;padding:6px 0;border-radius:8px;color:var(--ts);cursor:pointer}
+  .seg div.active{background:var(--s2);border:0.5px solid var(--bd);color:var(--tp)}
+  .feed{display:flex;gap:10px;padding:11px 0;border-bottom:0.5px solid var(--bd)}
+  .ic{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px}
+  .nav{display:flex;justify-content:space-around;border-top:0.5px solid var(--bd);
+    padding:12px 0 4px;color:var(--tm);position:sticky;bottom:0;background:var(--s2)}
+  .nav .tsvg{font-size:23px;cursor:pointer;padding:2px 10px}
+  .nav .tsvg.active{color:var(--acc)}
+  .toast{position:absolute;left:50%;transform:translateX(-50%);bottom:74px;background:var(--tp);color:var(--s2);
+    font-size:13px;padding:9px 16px;border-radius:20px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+  a.link{color:var(--ts);font-size:13px;text-decoration:none}
+  .tsvg{width:1em;height:1em;display:inline-block;vertical-align:-.125em;flex-shrink:0}
+  
+  .tbtn{position:fixed;top:14px;right:14px;width:40px;height:40px;border-radius:20px;border:0.5px solid var(--bds);background:var(--s2);color:var(--tp);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;z-index:20}
+  html[data-theme="light"]{--s2:#ffffff;--s1:#f5f4ef;--s0:#eae7df;--tp:#1f1f1d;--ts:#5f5e5a;--tm:#8f8e86;--bd:rgba(0,0,0,.09);--bds:rgba(0,0,0,.15);--acc:#185FA5;--acc-fill:#1f6fc0;--bg-acc:#E6F1FB;--t-acc:#185FA5;--suc:#3B6D11;--bg-suc:#EAF3DE;--t-suc:#3B6D11;--green:#4e8a1a;--warn:#854F0B;--bg-warn:#FAEEDA;--t-warn:#854F0B;}
+  html[data-theme="dark"]{--s2:#302f2b;--s1:#262521;--s0:#161613;--tp:#ece9e0;--ts:#b4b2a9;--tm:#8f8e86;--bd:rgba(255,255,255,.10);--bds:rgba(255,255,255,.17);--acc:#85B7EB;--acc-fill:#378ADD;--bg-acc:#0C447C;--t-acc:#B5D4F4;--suc:#97C459;--bg-suc:#27500A;--t-suc:#C0DD97;--green:#6fae2a;--warn:#FAC775;--bg-warn:#5a340a;--t-warn:#FAC775;}
+  a.btn{text-decoration:none}
+  .btn-danger{background:#c0392b;color:#fff}
+  .btn-strong{background:var(--tp);color:var(--s2)}
+  .overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:30}
+  .overlay.on{display:flex}
+  .sheet{width:100%;background:var(--s2);border-radius:20px 20px 0 0;padding:20px 18px 24px;max-height:94%;overflow-y:auto}
+  .reason{display:flex;align-items:center;gap:10px;padding:12px 14px;border:0.5px solid var(--bds);border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px}
+  .reason.sel{border-color:var(--acc);background:var(--bg-acc)}
+  .reason .rdot{width:18px;height:18px;border-radius:50%;border:2px solid var(--bds);flex-shrink:0}
+  .reason.sel .rdot{border-color:var(--acc);background:var(--acc)}
+  .step{display:none}.step.on{display:block}
+  .dircard{display:flex;align-items:center;gap:12px;padding:14px;border:0.5px solid var(--bds);border-radius:12px;margin-bottom:10px;cursor:pointer}
+  .dircard.sel{border-color:var(--acc);background:var(--bg-acc)}
+  .dircard .diri{width:38px;height:38px;border-radius:10px;background:var(--s1);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ts);flex-shrink:0}
+  .dircard.sel .diri{background:var(--acc-fill);color:#fff}
+  .dircard .dinfo{flex:1}
+  .dircard .dchk{font-size:18px;color:var(--acc);display:none}
+  .dircard.sel .dchk{display:block}
+</style>
+</head>
+<body>
+<button class="tbtn" onclick="toggleTheme()" aria-label="Toggle theme"><svg class="tsvg" id="tIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008" /></svg></button>
+<p class="hint">Interactive prototype — tap Continue to sign in, use the bottom bar to move between tabs, and press “Scan station QR” to simulate checking in.</p>
+
+<div class="frame">
+
+  <!-- SIGN IN -->
+  <div id="s-signin" class="screen on">
+    <div class="center" style="margin:16px 0 22px">
+      <div style="width:52px;height:52px;border-radius:14px;background:var(--bg-suc);color:var(--t-suc);display:flex;align-items:center;justify-content:center;margin:0 auto 12px"><svg class="tsvg" style="font-size:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /> <path d="M19 7a2 2 0 1 0 0 -4a2 2 0 0 0 0 4" /> <path d="M11 19h5.5a3.5 3.5 0 0 0 0 -7h-8a3.5 3.5 0 0 1 0 -7h4.5" /></svg></div>
+      <div style="font-size:13px;letter-spacing:.5px" class="muted">Tokyo Yamathon 2026</div>
+      <div style="font-size:18px;font-weight:500;margin-top:6px">Enter your bib number</div>
+    </div>
+    <input id="bibInput" inputmode="numeric" maxlength="4" value="142" style="text-align:center;font-size:26px;letter-spacing:6px;height:56px;margin-bottom:8px">
+    <div class="center muted" style="font-size:11px;margin-bottom:18px">It's on the team card mailed to your team leader</div>
+    <button class="btn btn-p" style="margin-bottom:16px" onclick="go('s-confirm')">Continue</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="flex:1;height:0.5px;background:var(--bd)"></div><span class="muted" style="font-size:12px">or</span><div style="flex:1;height:0.5px;background:var(--bd)"></div>
+    </div>
+    <button class="btn btn-o" onclick="showDirection()"><svg class="tsvg" style="font-size:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /> <path d="M7 17l0 .01" /> <path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /> <path d="M7 7l0 .01" /> <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /> <path d="M17 7l0 .01" /> <path d="M14 14l3 0" /> <path d="M20 14l0 .01" /> <path d="M14 14l0 3" /> <path d="M14 20l3 0" /> <path d="M17 17l3 0" /> <path d="M20 17l0 3" /></svg>Scan your team card</button>
+    <div class="center muted" style="font-size:11px;margin-top:8px">Signs you in instantly — no code needed</div>
+  </div>
+
+  <!-- CONFIRM -->
+  <div id="s-confirm" class="screen">
+    <div class="center" style="margin-bottom:18px">
+      <div style="font-size:16px;font-weight:500">Is this your team?</div>
+      <div class="muted" style="font-size:12px;margin-top:2px">Check the details before you start</div>
+    </div>
+    <div class="center sec" style="display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:16px;font-size:13px">
+      <span>Bib</span><span style="font-size:20px;font-weight:500;color:var(--tp);letter-spacing:2px">142</span>
+      <button class="btn btn-o" style="width:auto;height:28px;padding:0 10px;font-size:12px;color:var(--ts)" onclick="go('s-signin')">Edit</button>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:18px;font-weight:500">Traveling Wilburys</div>
+      <div class="chip" style="margin-top:6px">Full · Yamathon Trek</div>
+      <div style="border-top:0.5px solid var(--bd);margin-top:12px;padding-top:12px">
+        <div class="muted" style="font-size:12px;margin-bottom:6px">3 members</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:14px">
+          <span><svg class="tsvg sec" style="font-size:15px;vertical-align:-2px;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /> <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>Roy Orbison</span>
+          <span><svg class="tsvg sec" style="font-size:15px;vertical-align:-2px;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /> <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>George Harrison</span>
+          <span><svg class="tsvg sec" style="font-size:15px;vertical-align:-2px;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /> <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>Tom Petty</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="sec" style="font-size:12px;display:block;margin-bottom:6px">Enter the 4-digit code from your team card</label>
+      <input inputmode="numeric" maxlength="4" placeholder="0000" style="text-align:center;letter-spacing:8px">
+      <div class="center muted" style="font-size:11px;margin-top:6px">Printed on the card mailed to your team leader</div>
+    </div>
+    <button class="btn btn-p" onclick="showDirection()">Yes, this is us — start</button>
+    <div class="center" style="margin-top:12px"><a class="link" onclick="go('s-signin')">This isn't our team</a></div>
+  </div>
+
+  <div id="s-direction" class="screen">
+    <div class="center" style="margin:14px 0 18px">
+      <div style="font-size:18px;font-weight:500">Which way are you trekking?</div>
+      <div class="muted" style="font-size:12px;margin-top:4px;line-height:1.5">Full and Half teams pick their own direction around the loop. Choose the way your team will go.</div>
+    </div>
+    <div class="dircard sel" id="dc-cw" onclick="chooseDir(this,'cw')">
+      <div class="diri"><svg class="tsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5" /></svg></div>
+      <div class="dinfo"><div style="font-size:15px;font-weight:500">Clockwise</div><div class="muted" style="font-size:12px">Tokyo &#8594; Kanda &#8594; Ueno &#8594; &#8230; &#8594; Yurakucho</div></div>
+      <div class="dchk"><svg class="tsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10" /></svg></div>
+    </div>
+    <div class="dircard" id="dc-ccw" onclick="chooseDir(this,'ccw')">
+      <div class="diri"><svg class="tsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5" /></svg></div>
+      <div class="dinfo"><div style="font-size:15px;font-weight:500">Counter-clockwise</div><div class="muted" style="font-size:12px">Tokyo &#8594; Yurakucho &#8594; Shimbashi &#8594; &#8230; &#8594; Kanda</div></div>
+      <div class="dchk"><svg class="tsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10" /></svg></div>
+    </div>
+    <button class="btn btn-p" style="margin-top:6px" onclick="startTrek()">Start trekking</button>
+    <div class="muted" style="font-size:11px;text-align:center;margin-top:12px">Half-a-Half teams always trek clockwise.</div>
+  </div>
+
+  <!-- APP -->
+  <div id="s-app" class="screen">
+
+    <!-- TRACK -->
+    <div id="t-track" class="tab">
+      <div class="rowb" style="margin-bottom:14px">
+        <div><div style="font-size:14px;font-weight:500">Traveling Wilburys</div><div class="muted" style="font-size:12px">bib 142 · full trek</div></div>
+        <div class="center" style="text-align:right"><div style="font-size:18px;font-weight:500">04:12:38</div><div class="muted" style="font-size:11px">since wave 4 start</div></div>
+      </div>
+      <div style="display:flex;gap:14px">
+        <div id="trk" style="flex:1;position:relative;height:236px;overflow-y:auto;padding-right:4px"></div>
+        <div style="width:78px;display:flex;flex-direction:column;align-items:center">
+          <div style="font-size:26px;font-weight:500;color:var(--t-suc);line-height:1"><span id="cnt">11</span><span class="muted" style="font-size:15px">/30</span></div>
+          <div id="pct" class="muted" style="font-size:11px;margin-bottom:8px">37% done</div>
+          <div style="display:flex;gap:6px;height:186px">
+            <div style="position:relative;width:16px;height:100%;background:var(--s1);border:0.5px solid var(--bd);border-radius:8px;overflow:hidden">
+              <div id="fill" style="position:absolute;bottom:0;left:0;width:100%;height:37%;background:var(--green)"></div>
+              <div style="position:absolute;bottom:50%;left:0;width:100%;height:1px;background:var(--bds)"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:11px;color:var(--tm)"><span>30</span><span>15</span><span>0</span></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-p" style="height:46px;margin-top:14px" onclick="checkIn()"><svg class="tsvg" style="font-size:20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /> <path d="M7 17l0 .01" /> <path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /> <path d="M7 7l0 .01" /> <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /> <path d="M17 7l0 .01" /> <path d="M14 14l3 0" /> <path d="M20 14l0 .01" /> <path d="M14 14l0 3" /> <path d="M14 20l3 0" /> <path d="M17 17l3 0" /> <path d="M20 17l0 3" /></svg>Scan station QR to check in</button>
+      <div id="nextHint" class="center muted" style="font-size:11px;margin:6px 0 14px">Activates when you reach Otsuka</div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="rowb" style="margin-bottom:10px">
+          <span class="lbl"><svg class="tsvg" style="font-size:16px;color:var(--t-suc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /> <path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M13.41 10.59l2.59 -2.59" /> <path d="M7 12a5 5 0 0 1 5 -5" /></svg>Your pace</span>
+          <span class="chip" style="display:flex;align-items:center;gap:4px"><svg class="tsvg" style="font-size:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10" /></svg>On pace</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px"><span class="sec" style="font-size:13px">Projected finish</span><span style="font-size:22px;font-weight:500">18:40</span></div>
+        <div style="font-size:12px;color:var(--t-suc);margin-top:2px">2h 50m ahead of the 21:30 cutoff</div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <div style="flex:1;background:var(--s2);border-radius:8px;padding:8px 10px"><div class="muted" style="font-size:11px">your pace</div><div style="font-size:15px;font-weight:500">3.6 km/h</div></div>
+          <div style="flex:1;background:var(--s2);border-radius:8px;padding:8px 10px"><div class="muted" style="font-size:11px">needed</div><div style="font-size:15px;font-weight:500">3.4 km/h</div></div>
+        </div>
+        <div class="sec" style="font-size:12px;margin-top:10px;line-height:1.5">Nice steady rhythm — you're comfortably ahead. Keep it up and enjoy the trek.</div>
+      </div>
+
+      <div style="border-top:0.5px solid var(--bd);padding-top:10px;margin-bottom:12px">
+        <div class="lbl" style="margin-bottom:8px"><svg class="tsvg" style="font-size:16px;color:var(--t-suc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /> <path d="M7 21l3 -4" /> <path d="M16 21l-2 -4l-3 -3l1 -6" /> <path d="M6 12l2 -3l4 -1l3 3l3 1" /></svg>Trek details</div>
+        <div id="trekFeed" style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:8px;font-size:13px"><span class="muted" style="min-width:34px">4m</span><span>Checked in at Sugamo</span></div>
+          <div style="display:flex;gap:8px;font-size:13px"><span class="muted" style="min-width:34px">51m</span><span>Checked in at Komagome</span></div>
+        </div>
+      </div>
+      <div style="border-top:0.5px solid var(--bd);padding-top:10px">
+        <div class="lbl" style="margin-bottom:8px"><svg class="tsvg" style="font-size:16px;color:var(--t-acc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a3 3 0 0 1 0 6" /> <path d="M10 8v11a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-5" /> <path d="M12 8l4.524 -3.77a.9 .9 0 0 1 1.476 .692v12.156a.9 .9 0 0 1 -1.476 .692l-4.524 -3.77h-8a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h8" /></svg>Yamathon announcements</div>
+        <div style="display:flex;gap:8px;font-size:13px"><span class="muted" style="min-width:34px">8m</span><span>Rain expected around 2pm — stay safe</span></div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="t-notif" class="tab" style="display:none">
+      <div style="font-size:18px;font-weight:500;margin-bottom:14px">Notifications</div>
+      <div class="seg" id="notifSeg">
+        <div class="active" data-f="all" onclick="filterNotif('all',this)">All</div>
+        <div data-f="trek" onclick="filterNotif('trek',this)">My trek</div>
+        <div data-f="yama" onclick="filterNotif('yama',this)">Yamathon</div>
+      </div>
+      <div class="nrow" data-c="yama" style="display:flex;gap:10px;padding:12px 10px;background:var(--bg-warn);border-radius:10px;margin:8px 0">
+        <div class="ic" style="background:var(--s2)"><svg class="tsvg" style="color:var(--t-warn)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7" /> <path d="M11 13v2m0 3v2m4 -5v2m0 3v2" /></svg></div>
+        <div><div style="font-size:14px">Rain expected around 2pm — stay safe and mind the pavements</div><div class="muted" style="font-size:12px;margin-top:2px">Yamathon · 2m ago</div></div>
+      </div>
+      <div class="nrow feed" data-c="trek"><div class="ic" style="background:var(--bg-suc)"><svg class="tsvg" style="color:var(--t-suc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /> <path d="M11.87 21.48a1.992 1.992 0 0 1 -1.283 -.58l-4.244 -4.243a8 8 0 1 1 13.355 -3.474" /> <path d="M15 19l2 2l4 -4" /></svg></div><div><div style="font-size:14px">Checked in at Sugamo</div><div class="muted" style="font-size:12px;margin-top:2px">My trek · 4m ago</div></div></div>
+      <div class="nrow feed" data-c="yama"><div class="ic" style="background:var(--bg-acc)"><svg class="tsvg" style="color:var(--t-acc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9" /> <path d="M5 21v-7" /></svg></div><div><div style="font-size:14px">First team completed the full loop</div><div class="muted" style="font-size:12px;margin-top:2px">Yamathon · 22m ago</div></div></div>
+      <div class="nrow feed" data-c="trek"><div class="ic" style="background:var(--bg-suc)"><svg class="tsvg" style="color:var(--t-suc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 14h14v-9h-14v16" /></svg></div><div><div style="font-size:14px">Checked in at Komagome</div><div class="muted" style="font-size:12px;margin-top:2px">My trek · 51m ago</div></div></div>
+      <div class="nrow feed" data-c="yama"><div class="ic" style="background:var(--bg-acc)"><svg class="tsvg" style="color:var(--t-acc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.502 19.423c2.602 2.105 6.395 2.105 8.996 0c2.602 -2.105 3.262 -5.708 1.566 -8.546l-4.89 -7.26c-.42 -.625 -1.287 -.803 -1.936 -.397a1.376 1.376 0 0 0 -.41 .397l-4.893 7.26c-1.695 2.838 -1.035 6.441 1.567 8.546" /></svg></div><div><div style="font-size:14px">Water point open near Shibuya station</div><div class="muted" style="font-size:12px;margin-top:2px">Yamathon · 1h ago</div></div></div>
+      <div class="nrow feed" data-c="trek" style="border-bottom:none"><div class="ic" style="background:var(--bg-suc)"><svg class="tsvg" style="color:var(--t-suc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v5l2 2" /> <path d="M17 22l5 -3l-5 -3l0 6" /> <path d="M13.017 20.943a9 9 0 1 1 7.831 -7.292" /></svg></div><div><div style="font-size:14px">Wave 4 released — your clock started</div><div class="muted" style="font-size:12px;margin-top:2px">My trek · 1h 12m ago</div></div></div>
+    </div>
+
+    <!-- COMPLETION -->
+    <div id="t-completion" class="tab" style="display:none">
+      <div style="font-size:18px;font-weight:500;margin-bottom:14px">Completion</div>
+      <div style="border:0.5px solid var(--bds);border-radius:14px;overflow:hidden;margin-bottom:14px">
+        <div style="background:var(--bg-suc);padding:16px;text-align:center">
+          <svg class="tsvg" style="font-size:30px;color:var(--t-suc)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7.2a2.2 2.2 0 0 1 2.2 -2.2h1a2.2 2.2 0 0 0 1.55 -.64l.7 -.7a2.2 2.2 0 0 1 3.12 0l.7 .7c.412 .41 .97 .64 1.55 .64h1a2.2 2.2 0 0 1 2.2 2.2v1c0 .58 .23 1.138 .64 1.55l.7 .7a2.2 2.2 0 0 1 0 3.12l-.7 .7a2.2 2.2 0 0 0 -.64 1.55v1a2.2 2.2 0 0 1 -2.2 2.2h-1a2.2 2.2 0 0 0 -1.55 .64l-.7 .7a2.2 2.2 0 0 1 -3.12 0l-.7 -.7a2.2 2.2 0 0 0 -1.55 -.64h-1a2.2 2.2 0 0 1 -2.2 -2.2v-1a2.2 2.2 0 0 0 -.64 -1.55l-.7 -.7a2.2 2.2 0 0 1 0 -3.12l.7 -.7a2.2 2.2 0 0 0 .64 -1.55v-1" /> <path d="M9 12l2 2l4 -4" /></svg>
+          <div style="font-size:12px;color:var(--t-suc);margin-top:4px;letter-spacing:.5px">Tokyo Yamathon 2026 · finisher pass</div>
+        </div>
+        <div style="padding:18px 16px;text-align:center">
+          <div style="font-size:20px;font-weight:500">Traveling Wilburys</div>
+          <div class="sec" style="font-size:13px;margin-top:4px">completed the 2026 Yamathon Trek</div>
+          <div class="chip" style="margin-top:8px">Full · 42 km</div>
+          <div style="margin:18px 0 4px"><div style="font-size:34px;font-weight:500;color:var(--t-suc);line-height:1">30 / 30</div><div class="muted" style="font-size:12px;margin-top:4px">stations checked in</div></div>
+          <div class="sec" style="font-size:12px;margin-top:12px">Last check-in 17:47 · 19 October 2026</div>
+          <div class="muted" style="font-size:12px;margin-top:2px">Roy Orbison · George Harrison · Tom Petty</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;background:var(--s1);border-radius:10px;padding:10px 12px;margin-bottom:14px">
+        <svg class="tsvg muted" style="font-size:16px;margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M12 9h.01" /> <path d="M11 12h1v4h1" /></svg>
+        <div class="sec" style="font-size:12px;line-height:1.5">This confirms your check-ins. Official times and rankings are posted after the event.</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <button class="btn btn-p btn-sm" style="flex:1" onclick="toast('Opening your share sheet…')"><svg class="tsvg" style="font-size:17px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M15 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M8.7 10.7l6.6 -3.4" /> <path d="M8.7 13.3l6.6 3.4" /></svg>Share</button>
+        <button class="btn btn-o btn-sm" style="flex:1" onclick="toast('Downloading PDF…')"><svg class="tsvg" style="font-size:17px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" /> <path d="M7 11l5 5l5 -5" /> <path d="M12 4l0 12" /></svg>PDF</button>
+      </div>
+      <div class="lbl" style="margin-bottom:8px">Teams completed · Full Trek</div>
+      <div class="rowb" style="font-size:13px;padding:8px 0;border-bottom:0.5px solid var(--bd)"><span>Shibuya Striders</span><span class="muted">30/30</span></div>
+      <div class="rowb" style="font-size:13px;padding:8px 0;border-bottom:0.5px solid var(--bd)"><span>Loop Legends</span><span class="muted">30/30</span></div>
+      <div class="rowb" style="font-size:13px;padding:8px 0"><span>Traveling Wilburys</span><span class="muted">30/30</span></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="t-profile" class="tab" style="display:none">
+      <div class="center" style="margin-bottom:16px">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--bg-suc);color:var(--t-suc);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:500;margin:0 auto 10px">TW</div>
+        <div style="font-size:18px;font-weight:500">Traveling Wilburys</div>
+        <div class="muted" style="font-size:13px;margin-top:2px">bib 142 · Full Trek</div>
+        <div class="chip" style="display:inline-flex;align-items:center;gap:5px;margin-top:8px"><svg class="tsvg" style="font-size:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /> <path d="M9 12l2 2l4 -4" /></svg>Confirmed team</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="muted" style="font-size:12px;margin-bottom:8px">Members</div>
+        <div class="rowb" style="font-size:14px;padding:4px 0"><span>Roy Orbison</span><span class="sec" style="font-size:11px;background:var(--s2);border:0.5px solid var(--bd);padding:2px 8px;border-radius:var(--radius)">leader</span></div>
+        <div style="font-size:14px;padding:4px 0">George Harrison</div>
+        <div style="font-size:14px;padding:4px 0">Tom Petty</div>
+      </div>
+      <div style="border:0.5px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:16px">
+        <div class="rowb" style="padding:13px 14px;border-bottom:0.5px solid var(--bd)"><span style="font-size:14px;display:flex;align-items:center;gap:10px"><svg class="tsvg sec" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /> <path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>Notifications</span><span style="width:34px;height:20px;background:var(--acc-fill);border-radius:10px;position:relative"><span style="position:absolute;top:2px;right:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span></div>
+        <div class="rowb" style="padding:13px 14px;border-bottom:0.5px solid var(--bd)"><span style="font-size:14px;display:flex;align-items:center;gap:10px"><svg class="tsvg sec" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M15 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M8.7 10.7l6.6 -3.4" /> <path d="M8.7 13.3l6.6 3.4" /></svg>Share finishes to social</span><span style="width:34px;height:20px;background:var(--acc-fill);border-radius:10px;position:relative"><span style="position:absolute;top:2px;right:2px;width:16px;height:16px;background:#fff;border-radius:50%"></span></span></div>
+        <div class="rowb" style="padding:13px 14px;border-bottom:0.5px solid var(--bd)"><span style="font-size:14px;display:flex;align-items:center;gap:10px"><svg class="tsvg sec" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 21h-4.5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v7" /> <path d="M11 4h2" /> <path d="M12 17v.01" /> <path d="M19 16v6" /> <path d="M22 19l-3 3l-3 -3" /></svg>Add to home screen</span><svg class="tsvg muted" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6" /></svg></div>
+        <div class="rowb" style="padding:13px 14px;border-bottom:0.5px solid var(--bd)"><span style="font-size:14px;display:flex;align-items:center;gap:10px"><svg class="tsvg sec" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /> <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0" /></svg>Location &amp; camera</span><span style="font-size:12px;color:var(--t-suc)">Allowed</span></div>
+        <div class="rowb" style="padding:13px 14px"><span style="font-size:14px;display:flex;align-items:center;gap:10px"><svg class="tsvg sec" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /> <path d="M12 9h.01" /> <path d="M11 12h1v4h1" /></svg>Event info &amp; rules</span><svg class="tsvg muted" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6l-6 6" /></svg></div>
+      </div>
+      <div style="margin:0 0 16px">
+        <div class="lbl" style="margin-bottom:8px"><svg class="tsvg" style="font-size:16px;color:var(--ts)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" /></svg>Safety</div>
+        <button class="btn btn-danger" onclick="openEmergency()"><svg class="tsvg" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4" /> <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0" /> <path d="M12 16h.01" /></svg>Emergency help</button>
+        <button class="btn btn-o" style="margin-top:10px" onclick="openWithdraw()"><svg class="tsvg" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v16" /> <path d="M19 5v9" /> <path d="M7.641 3.645a5 5 0 0 1 4.359 1.355a5 5 0 0 0 7 0" /> <path d="M5 14a5 5 0 0 1 7 0a4.984 4.984 0 0 0 3.437 1.429m3.019 -.966c.19 -.14 .371 -.294 .544 -.463" /> <path d="M3 3l18 18" /></svg>Withdraw from the trek</button>
+      </div>
+      <div class="center"><a class="link" onclick="go('s-signin')">Not your team? Sign out</a></div>
+    </div>
+
+    <div class="nav">
+      <svg class="tsvg active" data-t="track" onclick="tab('track',this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5l1.5 1.5l2.5 -2.5" /> <path d="M3.5 11.5l1.5 1.5l2.5 -2.5" /> <path d="M3.5 17.5l1.5 1.5l2.5 -2.5" /> <path d="M11 6l9 0" /> <path d="M11 12l9 0" /> <path d="M11 18l9 0" /></svg>
+      <svg class="tsvg" data-t="notif" onclick="tab('notif',this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" /> <path d="M9 17v1a3 3 0 0 0 6 0v-1" /></svg>
+      <svg class="tsvg" data-t="completion" onclick="tab('completion',this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 0 12 0a6 6 0 1 0 -12 0" /> <path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889" /> <path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.232l3.4 -5.889" /></svg>
+      <svg class="tsvg" data-t="profile" onclick="tab('profile',this)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /> <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+    </div>
+  </div>
+
+  <div id="ovEmerg" class="overlay">
+    <div class="sheet">
+      <div class="rowb" style="margin-bottom:6px"><div style="font-size:17px;font-weight:500;display:flex;align-items:center;gap:8px"><svg class="tsvg" style="color:#c0392b" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4" /> <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0" /> <path d="M12 16h.01" /></svg>Emergency help</div><a class="link" onclick="closeOv('ovEmerg')">Close</a></div>
+      <div class="sec" style="font-size:13px;line-height:1.5;margin-bottom:16px">This contacts the Yamathon team (IVG) right away and can text them your team and last check-in so they can reach you fast.</div>
+      <a class="btn btn-danger" href="tel:+815012345678"><svg class="tsvg" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>Call IVG now</a>
+      <a class="btn btn-o" style="margin-top:10px" href="sms:+815012345678?&body=Yamathon%20emergency%20-%20Team%20Traveling%20Wilburys%20(bib%20142),%20last%20check-in%20Sugamo.%20We%20need%20assistance."><svg class="tsvg" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h8" /> <path d="M8 13h6" /> <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12" /></svg>Text IVG our location</a>
+      <div class="muted" style="font-size:11px;margin-top:12px;text-align:center">Sends team Traveling Wilburys · bib 142 · last at Sugamo</div>
+    </div>
+  </div>
+
+  <div id="ovWithdraw" class="overlay">
+    <div class="sheet">
+      <div id="w-reason" class="step on">
+        <div style="font-size:17px;font-weight:500;margin-bottom:4px">Withdraw from the trek?</div>
+        <div class="sec" style="font-size:13px;line-height:1.5;margin-bottom:14px">No problem — this happens, especially in bad weather. Tell us why so we know you're stopping safely.</div>
+        <div class="reason" onclick="pickReason(this,'weather')"><div class="rdot"></div>Weather</div>
+        <div class="reason" onclick="pickReason(this,'unwell')"><div class="rdot"></div>Injury or feeling unwell</div>
+        <div class="reason" onclick="pickReason(this,'time')"><div class="rdot"></div>Running out of time</div>
+        <div class="reason" onclick="pickReason(this,'other')"><div class="rdot"></div>Something else</div>
+        <div class="muted" style="font-size:11px;margin:10px 0 14px">You'll have 10 minutes to undo this before it's final.</div>
+        <button class="btn btn-strong" onclick="toSure()">Continue</button>
+        <div class="center" style="margin-top:10px"><a class="link" onclick="closeOv('ovWithdraw')">Cancel</a></div>
+      </div>
+      <div id="w-sure" class="step">
+        <div style="font-size:17px;font-weight:500;margin-bottom:4px">Are you sure?</div>
+        <div class="sec" style="font-size:13px;line-height:1.5;margin-bottom:16px">Your team will be marked as withdrawn and the Yamathon team will be notified that you've stopped. You can undo this within 10 minutes.</div>
+        <button class="btn btn-strong" onclick="doWithdraw()">Yes, withdraw our team</button>
+        <div class="center" style="margin-top:10px"><a class="link" onclick="wStep('reason')">Go back</a></div>
+      </div>
+      <div id="w-undo" class="step center">
+        <div style="font-size:17px;font-weight:500;margin-bottom:4px">Your team is withdrawn</div>
+        <div class="sec" style="font-size:13px;line-height:1.5;margin-bottom:14px">Changed your mind? You can undo while the timer runs.</div>
+        <div style="font-size:32px;font-weight:500" id="wClock">10:00</div>
+        <div class="muted" style="font-size:11px;margin:2px 0 16px">until this is final</div>
+        <button class="btn btn-p" onclick="undoWithdraw()"><svg class="tsvg" style="font-size:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4 -4l4 -4" /> <path d="M5 10h11a4 4 0 1 1 0 8h-1" /></svg>Undo — restore our trek</button>
+        <div style="margin-top:12px"><a class="link" onclick="skipTimer()">Skip timer (demo)</a></div>
+      </div>
+      <div id="w-final" class="step center">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--bg-warn);color:var(--t-warn);display:flex;align-items:center;justify-content:center;margin:4px auto 12px"><svg class="tsvg" style="font-size:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /></svg></div>
+        <div style="font-size:18px;font-weight:500">Thank you for taking part</div>
+        <div class="sec" style="font-size:13px;line-height:1.5;margin:6px 0 16px">You stopped safely and the Yamathon team has been notified. Here's how your trek went.</div>
+        <div class="card" style="text-align:left">
+          <div class="rowb" style="padding:5px 0"><span class="sec" style="font-size:13px">Stations reached</span><span style="font-size:14px;font-weight:500">11 / 30</span></div>
+          <div class="rowb" style="padding:5px 0"><span class="sec" style="font-size:13px">Distance</span><span style="font-size:14px;font-weight:500">~11 km</span></div>
+          <div class="rowb" style="padding:5px 0"><span class="sec" style="font-size:13px">Time on the trek</span><span style="font-size:14px;font-weight:500">4h 12m</span></div>
+          <div class="rowb" style="padding:5px 0"><span class="sec" style="font-size:13px">Furthest point</span><span style="font-size:14px;font-weight:500">Sugamo</span></div>
+        </div>
+        <div class="muted" style="font-size:11px;margin:12px 0 14px">Recorded as withdrawn — not a completion. Every step still counts.</div>
+        <button class="btn btn-o" onclick="finishWithdraw()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+</div>
+
+<script>
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');window.scrollTo(0,0);}
+function enterApp(){go('s-app');}
+var selDir='cw';
+function showDirection(){go('s-direction');}
+function chooseDir(el,dd){selDir=dd;document.querySelectorAll('.dircard').forEach(function(x){x.classList.remove('sel');});el.classList.add('sel');}
+function startTrek(){dir=selDir;renderTrack();enterApp();}
+function tab(name,el){
+  document.querySelectorAll('#s-app .tab').forEach(t=>t.style.display='none');
+  document.getElementById('t-'+name).style.display='block';
+  document.querySelectorAll('.nav .tsvg').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  window.scrollTo(0,0);
+}
+function filterNotif(f,el){
+  document.querySelectorAll('#notifSeg div').forEach(d=>d.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.nrow').forEach(r=>{
+    r.style.display=(f==='all'||r.dataset.c===f)?'flex':'none';
+  });
+}
+var toastT;
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800);}
+
+var CW=[
+  {name:'Tokyo', leg:'1.3 km'},
+  {name:'Kanda', leg:'0.7 km'},
+  {name:'Akihabara', leg:'1.0 km'},
+  {name:'Okachimachi', leg:'0.6 km'},
+  {name:'Ueno', leg:'1.1 km'},
+  {name:'Uguisudani', leg:'1.1 km'},
+  {name:'Nippori', leg:'0.5 km'},
+  {name:'Nishi-Nippori', leg:'0.8 km'},
+  {name:'Tabata', leg:'1.6 km'},
+  {name:'Komagome', leg:'0.7 km'},
+  {name:'Sugamo', leg:'1.1 km'},
+  {name:'Otsuka', leg:'1.8 km'},
+  {name:'Ikebukuro', leg:'1.2 km'},
+  {name:'Mejiro', leg:'0.9 km'},
+  {name:'Takadanobaba', leg:'1.4 km'},
+  {name:'Shin-Okubo', leg:'1.3 km'},
+  {name:'Shinjuku', leg:'0.7 km'},
+  {name:'Yoyogi', leg:'1.5 km'},
+  {name:'Harajuku', leg:'1.2 km'},
+  {name:'Shibuya', leg:'1.6 km'},
+  {name:'Ebisu', leg:'1.5 km'},
+  {name:'Meguro', leg:'1.2 km'},
+  {name:'Gotanda', leg:'0.9 km'},
+  {name:'Osaki', leg:'2.0 km'},
+  {name:'Shinagawa', leg:'1.0 km'},
+  {name:'Takanawa Gateway', leg:'1.3 km'},
+  {name:'Tamachi', leg:'1.5 km'},
+  {name:'Hamamatsucho', leg:'1.2 km'},
+  {name:'Shimbashi', leg:'1.1 km'},
+  {name:'Yurakucho', leg:'0.6 km'}
+];
+var CCW=[
+  {name:'Tokyo', leg:'0.8 km'},
+  {name:'Yurakucho', leg:'1.1 km'},
+  {name:'Shimbashi', leg:'1.2 km'},
+  {name:'Hamamatsucho', leg:'1.5 km'},
+  {name:'Tamachi', leg:'1.3 km'},
+  {name:'Takanawa Gateway', leg:'1.0 km'},
+  {name:'Shinagawa', leg:'2.0 km'},
+  {name:'Osaki', leg:'0.9 km'},
+  {name:'Gotanda', leg:'1.2 km'},
+  {name:'Meguro', leg:'1.5 km'},
+  {name:'Ebisu', leg:'1.6 km'},
+  {name:'Shibuya', leg:'1.2 km'},
+  {name:'Harajuku', leg:'1.5 km'},
+  {name:'Yoyogi', leg:'0.7 km'},
+  {name:'Shinjuku', leg:'1.3 km'},
+  {name:'Shin-Okubo', leg:'1.4 km'},
+  {name:'Takadanobaba', leg:'0.9 km'},
+  {name:'Mejiro', leg:'1.2 km'},
+  {name:'Ikebukuro', leg:'1.8 km'},
+  {name:'Otsuka', leg:'1.1 km'},
+  {name:'Sugamo', leg:'0.7 km'},
+  {name:'Komagome', leg:'1.6 km'},
+  {name:'Tabata', leg:'0.8 km'},
+  {name:'Nishi-Nippori', leg:'0.5 km'},
+  {name:'Nippori', leg:'1.1 km'},
+  {name:'Uguisudani', leg:'1.1 km'},
+  {name:'Ueno', leg:'0.6 km'},
+  {name:'Okachimachi', leg:'1.0 km'},
+  {name:'Akihabara', leg:'0.7 km'},
+  {name:'Kanda', leg:'1.3 km'}
+];
+var dir='cw', done=11, total=30;
+function stnList(){return dir==='cw'?CW:CCW;}
+function renderTrack(){
+  var L=stnList(), el=document.getElementById('trk');
+  var line='<div style="position:absolute;left:9px;top:22px;bottom:22px;width:2px;background:var(--bds)"></div>';
+  var start='<div style="position:relative;padding:7px 0 7px 30px"><div style="position:absolute;left:3px;top:9px;width:14px;height:14px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center"><svg class=\"tsvg\" style=\"font-size:9px;color:#fff\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9\" /> <path d=\"M5 21v-7\" /></svg></div><div style="font-size:14px" class="sec">Tokyo TOKIA</div><div style="font-size:11px;color:var(--t-suc)">start · your trek began here</div></div>';
+  var html=line+start;
+  L.forEach(function(s,i){
+    var next=L[i+1];
+    if(i<done){
+      html+='<div style="position:relative;padding:7px 0 7px 30px"><div style="position:absolute;left:3px;top:9px;width:14px;height:14px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center"><svg class=\"tsvg\" style=\"font-size:10px;color:#fff\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12l5 5l10 -10\" /></svg></div><div style="font-size:14px" class="sec">'+s.name+'</div><div style="font-size:11px;color:var(--t-suc)">checked in</div></div>';
+    } else if(i===done){
+      html+='<div style="position:relative;padding:7px 8px 7px 30px;background:var(--bg-acc);border-radius:10px"><div style="position:absolute;left:1px;top:9px;width:18px;height:18px;border-radius:50%;background:var(--acc-fill);border:3px solid var(--s2)"></div><div style="font-size:15px;font-weight:500">'+s.name+'</div><div style="font-size:12px;color:var(--t-acc)">380 m away · next up</div>'+(next?'<div class="muted" style="font-size:11px;margin-top:1px">then '+s.leg+' on to '+next.name+'</div>':'')+'</div>';
+    } else {
+      html+='<div style="position:relative;padding:7px 0 7px 30px"><div style="position:absolute;left:4px;top:10px;width:12px;height:12px;border-radius:50%;background:var(--s2);border:2px solid var(--bds)"></div><div style="font-size:14px">'+s.name+'</div>'+(next?'<div class="muted" style="font-size:11px">'+s.leg+' to '+next.name+'</div>':'<div class="muted" style="font-size:11px">'+s.leg+' to the finish</div>')+'</div>';
+    }
+  });
+  html+='<div style="position:relative;padding:7px 8px 9px 30px;background:var(--bg-suc);border-radius:10px;margin-top:4px"><div style="position:absolute;left:1px;top:9px;width:18px;height:18px;border-radius:50%;background:var(--green);border:3px solid var(--s2);display:flex;align-items:center;justify-content:center"><svg class=\"tsvg\" style=\"font-size:11px;color:#fff\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9\" /> <path d=\"M5 21v-7\" /></svg></div><div style="font-size:15px;font-weight:500">Tokyo TOKIA</div><div style="font-size:12px;color:var(--t-suc)">finish line · your trek ends here</div></div>';
+  el.innerHTML=html;
+  var nx=done<total?L[done]:null, nh=document.getElementById('nextHint');
+  if(nh) nh.textContent = nx? 'Activates when you reach '+nx.name : 'Trek complete';
+}
+function checkIn(){
+  if(done>=total){toast('All stations checked in');return;}
+  var L=stnList(), justName=L[done].name;
+  done++;
+  document.getElementById('cnt').textContent=done;
+  var p=Math.round(done/total*100);
+  document.getElementById('pct').textContent=p+'% done';
+  document.getElementById('fill').style.height=p+'%';
+  var feed=document.getElementById('trekFeed'), row=document.createElement('div');
+  row.style.cssText='display:flex;gap:8px;font-size:13px';
+  row.innerHTML='<span class="muted" style="min-width:34px">now</span><span>Checked in at '+justName+'</span>';
+  feed.insertBefore(row,feed.firstChild);
+  renderTrack();
+  toast('Checked in at '+justName);
+}
+
+
+
+function currentTheme(){return document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+var MOON='<svg class="tsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008" /></svg>',SUN='<svg class="tsvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /> <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" /></svg>';function syncThemeBtn(){document.getElementById('tIcon').innerHTML=(currentTheme()==='dark'?SUN:MOON);}
+function toggleTheme(){document.documentElement.dataset.theme=(currentTheme()==='dark'?'light':'dark');syncThemeBtn();}
+renderTrack();
+syncThemeBtn();
+function show(id){document.getElementById(id).classList.add('on');}
+function closeOv(id){document.getElementById(id).classList.remove('on');}
+function openEmergency(){show('ovEmerg');}
+var chosenReason=null,wTimer,wLeft;
+function openWithdraw(){chosenReason=null;document.querySelectorAll('#w-reason .reason').forEach(function(x){x.classList.remove('sel');});wStep('reason');show('ovWithdraw');}
+function wStep(s){['reason','sure','undo','final'].forEach(function(x){var e=document.getElementById('w-'+x);if(e)e.classList.toggle('on',x===s);});}
+function pickReason(el,r){chosenReason=r;document.querySelectorAll('#w-reason .reason').forEach(function(x){x.classList.remove('sel');});el.classList.add('sel');}
+function toSure(){if(!chosenReason){toast('Please choose a reason');return;}wStep('sure');}
+function renderTimer(){var m=Math.floor(wLeft/60),s=wLeft%60;var e=document.getElementById('wClock');if(e)e.textContent=m+':'+(s<10?'0':'')+s;}
+function doWithdraw(){wStep('undo');wLeft=600;renderTimer();clearInterval(wTimer);wTimer=setInterval(function(){wLeft--;renderTimer();if(wLeft<=0){clearInterval(wTimer);wStep('final');}},1000);}
+function undoWithdraw(){clearInterval(wTimer);closeOv('ovWithdraw');toast('Welcome back — your trek is active');}
+function skipTimer(){clearInterval(wTimer);wStep('final');}
+function finishWithdraw(){closeOv('ovWithdraw');toast('Recorded as withdrawn — stay safe');}
+</script>
+</body>
+</html>
